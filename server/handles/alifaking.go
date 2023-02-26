@@ -21,8 +21,8 @@ func AliFakingResponse(c *gin.Context) {
 	//c.Header("Content-Type", "application/oct-stream")
 	////c.Header("Content-Length", ``+length)
 	//c.Header("Accept-Ranges", `bytes`)
-	file, _ := os.Open("/Users/dll/Downloads/1.mp4")
-	fileInfo, _ := os.Lstat("/Users/dll/Downloads/1.mp4")
+	file, _ := os.Open("/opt/alist/data/default.mp4")
+	fileInfo, _ := os.Lstat("/opt/alist/data/default.mp4")
 	//c.Data(200, "application/oct-stream", []byte{1, 2, 3})
 
 	c.DataFromReader(200, fileInfo.Size(), "application/oct-stream", file, extraHeaders)
