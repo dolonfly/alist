@@ -2,8 +2,12 @@ package op
 
 import (
 	"context"
+	"net/http"
+	"net/url"
 	"os"
 	stdpath "path"
+	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/Xhofe/go-cache"
@@ -231,6 +235,8 @@ func GetUnwrap(ctx context.Context, storage driver.Driver, path string) (model.O
 var linkCache = cache.NewMemCache(cache.WithShards[*model.Link](16))
 var linkG singleflight.Group[*model.Link]
 
+var thisFolderRecentViewCache = cache.NewMemCache[int]()
+
 // Link get link, if is an url. should have an expiry time
 func Link(ctx context.Context, storage driver.Driver, path string, args model.LinkArgs) (*model.Link, model.Obj, error) {
 	if storage.Config().CheckStatus && storage.GetStorage().Status != WORK {
@@ -244,14 +250,38 @@ func Link(ctx context.Context, storage driver.Driver, path string, args model.Li
 		return nil, nil, errors.WithStack(errs.NotFile)
 	}
 	key := Key(storage, path) + ":" + args.IP
+
+	folderPath, fileName := filepath.Split(Key(storage, path))
+	log.Debugf("====>>>> folderPath %s fileName=%s, driver=%s", folderPath, fileName, storage.GetStorage().Driver)
+
 	if link, ok := linkCache.Get(key); ok {
 		return link, file, nil
 	}
 	fn := func() (*model.Link, error) {
+		s, ok := thisFolderRecentViewCache.Get(folderPath)
+		if !ok {
+			s = 0
+		}
+		thisFolderRecentViewCache.Set(folderPath, s+1, cache.WithEx[int](time.Second*10))
+
+		if ok {
+			return &model.Link{
+				Header: http.Header{
+					"Referer":             []string{"https://www.aliyundrive.com/"},
+					"Content-Type":        []string{"application/oct-stream"},
+					"Content-Disposition": []string{"attachment; filename*=UTF-8''" + file.GetName()},
+				},
+				URL: "http://127.0.0.1:5244/api/public/alifaking?filename=" + url.QueryEscape(file.GetName()) + "&length=" + strconv.FormatInt(file.GetSize(), 10) + "&flood=1",
+				//URL: resp.DownloadUrl,
+			}, nil
+		}
+
 		link, err := storage.Link(ctx, file, args)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed get link")
 		}
+		log.Debugf("====>>>> link url %s", link.URL)
+
 		if link.Expiration != nil {
 			linkCache.Set(key, link, cache.WithEx[*model.Link](*link.Expiration))
 		}
