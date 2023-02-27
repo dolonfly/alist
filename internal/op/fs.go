@@ -2,6 +2,7 @@ package op
 
 import (
 	"context"
+	"github.com/alist-org/alist/v3/internal/conf"
 	"net/http"
 	"net/url"
 	"os"
@@ -271,7 +272,7 @@ func Link(ctx context.Context, storage driver.Driver, path string, args model.Li
 					"Content-Type":        []string{"application/oct-stream"},
 					"Content-Disposition": []string{"attachment; filename*=UTF-8''" + file.GetName()},
 				},
-				URL: "http://127.0.0.1:5244/api/public/alifaking?filename=" + url.QueryEscape(file.GetName()) + "&length=" + strconv.FormatInt(file.GetSize(), 10) + "&flood=1",
+				URL: conf.Conf.SiteURL + "/api/public/alifaking?filename=" + url.QueryEscape(file.GetName()) + "&length=" + strconv.FormatInt(file.GetSize(), 10) + "&flood=1",
 				//URL: resp.DownloadUrl,
 			}, nil
 		}
