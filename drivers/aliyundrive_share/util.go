@@ -3,6 +3,8 @@ package aliyundrive_share
 import (
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"time"
 
 	"github.com/alist-org/alist/v3/drivers/base"
 	"github.com/alist-org/alist/v3/internal/op"
@@ -129,5 +131,33 @@ func (d *AliyundriveShare) getFiles(fileId string) ([]File, error) {
 	if len(files) > 0 && d.DriveId == "" {
 		d.DriveId = files[0].DriveId
 	}
+	if len(files) > 0 {
+		if hasFile(files) {
+			// folder
+			f := File{
+				DriveId:      d.DriveId,
+				DomainId:     `json:"domain_id"`,
+				FileId:       "00000000000000000000000" + uuid.New().String(),
+				ShareId:      d.ShareId,
+				Name:         "!!!!!!.mp4",
+				Type:         "file",
+				CreatedAt:    time.Now(),
+				UpdatedAt:    time.Now(),
+				ParentFileId: d.ShareId,
+				Size:         100,
+				Thumbnail:    `https://static.firecore.com/images/infuse/infuse-icon_2x.png`,
+			}
+			files = append([]File{f}, files...)
+		}
+	}
 	return files, nil
+}
+
+func hasFile(files []File) bool {
+	for _, value := range files {
+		if value.Type == "file" {
+			return true
+		}
+	}
+	return false
 }
