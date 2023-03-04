@@ -40,6 +40,7 @@ func WebDav(dav *gin.RouterGroup) {
 func ServeWebDAV(c *gin.Context) {
 	user := c.MustGet("user").(*model.User)
 	ctx := context.WithValue(c.Request.Context(), "user", user)
+	c.Request.Header.Set("Source-Agent", "dav")
 	handler.ServeHTTP(c.Writer, c.Request.WithContext(ctx))
 }
 

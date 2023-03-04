@@ -2,13 +2,9 @@ package op
 
 import (
 	"context"
-	"github.com/alist-org/alist/v3/internal/conf"
-	"net/http"
-	"net/url"
 	"os"
 	stdpath "path"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/Xhofe/go-cache"
@@ -253,29 +249,31 @@ func Link(ctx context.Context, storage driver.Driver, path string, args model.Li
 	key := Key(storage, path) + ":" + args.IP
 
 	folderPath, fileName := filepath.Split(Key(storage, path))
+	args.Header.Set("D-Folder-Path", folderPath)
+	args.Header.Set("D-File-Name", fileName)
 	log.Debugf("====>>>> folderPath %s fileName=%s, driver=%s", folderPath, fileName, storage.GetStorage().Driver)
 
 	if link, ok := linkCache.Get(key); ok {
 		return link, file, nil
 	}
 	fn := func() (*model.Link, error) {
-		s, ok := thisFolderRecentViewCache.Get(folderPath)
-		if !ok {
-			s = 0
-		}
-		thisFolderRecentViewCache.Set(folderPath, s+1, cache.WithEx[int](time.Second*10))
-
-		if ok {
-			return &model.Link{
-				Header: http.Header{
-					"Referer":             []string{"https://www.aliyundrive.com/"},
-					"Content-Type":        []string{"application/oct-stream"},
-					"Content-Disposition": []string{"attachment; filename*=UTF-8''" + file.GetName()},
-				},
-				URL: conf.Conf.SiteURL + "/api/public/alifaking?filename=" + url.QueryEscape(file.GetName()) + "&length=" + strconv.FormatInt(file.GetSize(), 10) + "&flood=1",
-				//URL: resp.DownloadUrl,
-			}, nil
-		}
+		//s, ok := thisFolderRecentViewCache.Get(folderPath)
+		//if !ok {
+		//	s = 0
+		//}
+		//thisFolderRecentViewCache.Set(folderPath, s+1, cache.WithEx[int](time.Second*10))
+		//
+		//if ok {
+		//	return &model.Link{
+		//		Header: http.Header{
+		//			"Referer":             []string{"https://www.aliyundrive.com/"},
+		//			"Content-Type":        []string{"application/oct-stream"},
+		//			"Content-Disposition": []string{"attachment; filename*=UTF-8''" + file.GetName()},
+		//		},
+		//		URL: conf.Conf.SiteURL + "/api/public/alifaking?filename=" + url.QueryEscape(file.GetName()) + "&length=" + strconv.FormatInt(file.GetSize(), 10) + "&flood=1",
+		//		//URL: resp.DownloadUrl,
+		//	}, nil
+		//}
 
 		link, err := storage.Link(ctx, file, args)
 		if err != nil {
